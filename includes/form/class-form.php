@@ -46,8 +46,10 @@ function __construct(){
 
 	public function getNonSelectedInput()
 	{
-		$nonSelectedFields = [];
-		$checkedFields = get_option('evcal_options_evoau_1')['evoaup_levels']['814239']['fields'];
+		$levelKey = $this->getevoup_levels_key();
+		if($levelKey == null) return false;
+
+		$checkedFields = get_option('evcal_options_evoau_1')['evoaup_levels'][$levelKey]['fields'];
 		$allFields = $this->getEventOnPlusInputFields();
 		foreach ($allFields as $key => $fieldValue) {
 			if(in_array($fieldValue, $checkedFields)){
@@ -61,6 +63,8 @@ function __construct(){
 	{
 		$FORM_FIELDS = EVOAU()->frontend->au_form_fields();
 		$nonSelectedFields = $this->getNonSelectedInput();
+		if(!$nonSelectedFields) return $FORM_FIELDS;
+
 		if($FORM_FIELDS){
 			foreach ($FORM_FIELDS as $key => $field) {
 				if(in_array($key, $nonSelectedFields)){
@@ -69,6 +73,22 @@ function __construct(){
 			}
 		}
 		return $FORM_FIELDS;
+	}
+
+	public function getevoup_levels_key()
+	{
+		$permissionKey = null;
+		$permissionLevels = get_option('evcal_options_evoau_1')['evoaup_levels'];
+		if($permissionLevels){
+			foreach ($permissionLevels as $key => $permissionLevel) {
+				if(isset($permissionLevel['select_role']) && $permissionLevel['select_role']){
+					if(in_array($permissionLevel['select_role'], wp_get_current_user(  )->roles)){
+						$permissionKey = $key;
+					}
+				}
+			}
+		}
+		return $permissionKey;
 	}
 
 // FORM CONTENT 
@@ -232,9 +252,10 @@ function get_content($event_id ='', $atts='', $form_field_permissions=array(), $
 			
 			// get all the fields after processing
 
-				$FORM_FIELDS = EVOAU()->frontend->au_form_fields();	
-				$FORM_FIELDS = $this->removeUncheckedFields();
+				// $FORM_FIELDS = EVOAU()->frontend->au_form_fields();	
 
+				// Form field modified by AR
+				$FORM_FIELDS = $this->removeUncheckedFields();
 
 				$EACH_FIELD = $this->process_form_fields_array($FIELD_ORDER, 
 					apply_filters('evoau_form_field_permissions_array', $form_field_permissions, $_EDITFORM, $event_id)
